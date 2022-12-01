@@ -3,7 +3,6 @@ import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.sql.Connection;
-import java.sql.Date;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -78,8 +77,7 @@ class JTableExample extends JFrame implements ActionListener {
 		lblNewLabel.setFont(new Font("맑은 고딕", Font.BOLD, 24));
 		lblNewLabel.setBounds(305, 10, 200, 24);
 		add(lblNewLabel);
-		
-		setTable(bookModel);
+
 		table.setModel(bookModel);
 		jsp.setBorder(new LineBorder(new Color(128, 128, 128), 2, true));
 		jsp.setBounds(12, 88, 760, 320);
@@ -170,7 +168,6 @@ class JTableExample extends JFrame implements ActionListener {
 		tableLabel.setFont(new Font("맑은 고딕", Font.PLAIN, 18));
 		tableLabel.setBounds(12, 32, 120, 30);
 		add(tableLabel);
-
 		this.setVisible(true);
 	}
 
@@ -181,6 +178,7 @@ class JTableExample extends JFrame implements ActionListener {
 		tableType = comSelect;
 		if (command.equals("login")) {
 			// 로그인 이벤트
+			login();
 		} else if (command.equals("search")) {
 			// 검색 이벤트
 		} else if (command.equals("add")) {
@@ -189,22 +187,42 @@ class JTableExample extends JFrame implements ActionListener {
 			// 변경 이벤트
 		} else if (command.equals("sell")) {
 			// 판매 이벤트
-		} else if (comSelect.equals("책")) {
-			// 책 목록 불러오기
-			setTable(bookModel);
-			table.setModel(bookModel);
-		} else if (comSelect.equals("회원")) {
-			// 회원 목록 불러오기
-			setTable(userModel);
-			table.setModel(userModel);
-		} else if (comSelect.equals("우수고객")) {
-			// 우수고객 목록 불러오기
-			setTable(userModel);
-			table.setModel(userModel);
-		} else if (comSelect.equals("재고량부족 책목록")) {
-			// 재고량 부족 책 목록 불러오기
-			setTable(bookModel);
-			table.setModel(bookModel);
+		} // else if (comSelect.equals("책")) {
+//			// 책 목록 불러오기
+//			setTable(bookModel);
+//			table.setModel(bookModel);
+//		} else if (comSelect.equals("회원")) {
+//			// 회원 목록 불러오기
+//			setTable(userModel);
+//			table.setModel(userModel);
+//		} else if (comSelect.equals("우수고객")) {
+//			// 우수고객 목록 불러오기
+//			setTable(userModel);
+//			table.setModel(userModel);
+//		} else if (comSelect.equals("재고량부족 책목록")) {
+//			// 재고량 부족 책 목록 불러오기
+//			setTable(bookModel);
+//			table.setModel(bookModel);
+//		}
+	}
+
+	private void login() {
+		String query = "select 비밀번호 from 관리자 where 관리자코드 = '" + adminCodeTf.getText() + "' and 비밀번호 = '"
+				+ adminPwTf.getText() + "'";
+		DB_Conn dbc = new DB_Conn();
+		try {
+			Statement stmt = dbc.con.createStatement();
+			ResultSet rs = stmt.executeQuery(query);
+			while (rs.next()) {
+				if(adminPwTf.getText().equals(rs.getString(1))) {
+					
+				}
+			}
+			stmt.close();
+			rs.close();
+			dbc.con.close();
+		} catch (SQLException e) {
+			e.printStackTrace();
 		}
 	}
 
@@ -219,7 +237,7 @@ class JTableExample extends JFrame implements ActionListener {
 		} else if (tableType.equals("재고량부족 책목록")) {
 			// 재고량 부족 책목록 관련 저장프로시저 사용해야함
 		}
-		
+
 		DB_Conn dbc = new DB_Conn();
 		try {
 			if (model.getRowCount() > 1) {
