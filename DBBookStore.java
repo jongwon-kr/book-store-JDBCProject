@@ -8,6 +8,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
+import javax.swing.DefaultComboBoxModel;
 import javax.swing.DropMode;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
@@ -49,6 +50,7 @@ class JTableExample extends JFrame implements ActionListener {
 	// Table 생성
 	private DefaultTableModel bookModel = new DefaultTableModel(bookAttribute, 0);
 	private DefaultTableModel userModel = new DefaultTableModel(userAttribute, 0);
+	private DefaultTableModel searchModel = new DefaultTableModel(bookAttribute, 0);
 	// Table에 들어갈 데이터 목록들 (헤더정보, 추가 될 row 개수)
 	private JTable table = new JTable();
 	private JScrollPane jsp = new JScrollPane(table);
@@ -61,6 +63,7 @@ class JTableExample extends JFrame implements ActionListener {
 	private String comData[] = { "책", "회원", "우수고객", "재고량부족 책목록" }; // 테이블 선택 데이터
 	private String searchData[];
 	private JComboBox tableComboBox;
+	private JComboBox searchComboBox;
 	private String tableType = "책";
 
 	private JButton loginBtn; // 로그인 버튼
@@ -173,16 +176,18 @@ class JTableExample extends JFrame implements ActionListener {
 		tableComboBox.addActionListener(this);
 		add(tableComboBox);
 
+		searchComboBox = new JComboBox(bookAttribute);
+		searchComboBox.setBounds(74, 421, 100, 30);
+		searchComboBox.setFont(new Font("맑은 고딕", Font.PLAIN, 12));
+		searchComboBox.setBackground(Color.white);
+		searchComboBox.setFocusable(false);
+		add(searchComboBox);
+
 		searchTf = new JTextField();
 		searchTf.setDropMode(DropMode.INSERT);
 		searchTf.setBounds(176, 421, 145, 30);
 		add(searchTf);
 		searchTf.setColumns(10);
-
-		JLabel searchLabel = new JLabel("Name");
-		searchLabel.setFont(new Font("맑은 고딕", Font.PLAIN, 18));
-		searchLabel.setBounds(116, 418, 58, 30);
-		add(searchLabel);
 
 		JLabel tableLabel = new JLabel("Select Table");
 		tableLabel.setFont(new Font("맑은 고딕", Font.PLAIN, 18));
@@ -226,10 +231,12 @@ class JTableExample extends JFrame implements ActionListener {
 			// 판매 이벤트
 		} else if (comSelect.equals("책")) {
 			// 책 목록 불러오기
+			searchComboBox.setModel(new DefaultComboBoxModel(bookAttribute));
 			setTable(bookModel, comSelect);
 			table.setModel(bookModel);
 		} else if (comSelect.equals("회원")) {
 			// 회원 목록 불러오기
+			searchComboBox.setModel(new DefaultComboBoxModel(userAttribute));
 			setTable(userModel, comSelect);
 			table.setModel(userModel);
 		} else if (comSelect.equals("우수고객")) {
@@ -246,13 +253,23 @@ class JTableExample extends JFrame implements ActionListener {
 	// 검색
 	private void search() {
 		String searchKeyword = searchTf.getText(); // 검색어
-
+		int searchColumn = searchComboBox.getSelectedIndex();
+		Object[] searchData = new Object[6];
+		System.out.println(searchColumn);
 		if (tableType.equals("책")) {
 			if (searchKeyword.equals("")) { // 검색 창이 빈칸일 때
 				setTable(bookModel, "책");
 				table.setModel(bookModel);
 			} else {
-
+				for (int i = 0; i < table.getRowCount(); i++) {
+					if (table.getValueAt(i, searchColumn).toString().contains(searchKeyword)) {
+						for (int j = 0; j < 6; j++) {
+							searchData[j] = table.getValueAt(i, j).toString();
+						}
+						searchModel.addRow(searchData);
+					}
+				}
+				table.setModel(searchModel);
 			}
 		} else if (tableType.equals("회원")) {
 			if (searchKeyword.equals("")) { // 검색 창이 빈칸일 때
