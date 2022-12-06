@@ -11,11 +11,14 @@ import java.sql.Statement;
 import javax.swing.DropMode;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
+import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
+import javax.swing.SwingConstants;
 import javax.swing.border.LineBorder;
 import javax.swing.table.DefaultTableModel;
 
@@ -51,19 +54,29 @@ class JTableExample extends JFrame implements ActionListener {
 	private JScrollPane jsp = new JScrollPane(table);
 	private JButton btn = new JButton("출력");
 
-	private JTextField adminCodeTf;
-	private JTextField adminPwTf;
-	private JTextField searchTf;
+	private JTextField adminCodeTf; // 관리자 코드 입력 textField
+	private JTextField adminPwTf; // 관리자 비밀번호 입력 textField
+	private JTextField searchTf; // 검색 내용 입력 textField
 
-	private String comData[] = { "책", "회원", "우수고객", "재고량부족 책목록" };
+	private String comData[] = { "책", "회원", "우수고객", "재고량부족 책목록" }; // 테이블 선택 데이터
+	private String searchData[];
 	private JComboBox tableComboBox;
 	private String tableType = "책";
 
-	private JButton loginBtn;
-	private JButton searchBtn;
-	private JButton addBtn;
-	private JButton updateBtn;
-	private JButton sellBtn;
+	private JButton loginBtn; // 로그인 버튼
+	private JButton searchBtn; // 검색 버튼
+	private JButton addBtn; // 추가 버튼
+	private JButton updateBtn; // 수정 버튼
+	private JButton sellBtn; // 판매 버튼
+	private JLabel loginCheckLabel; // 로그인 확인 라벨
+	private JLabel adminCodeLabel;
+	private JLabel adminPwLabel;
+	private JDialog alertDialog; // 알림창 다이얼로그
+	private JDialog addDialog; // 추가 다이얼로그
+	private JDialog updateDialog; // 수정 다이얼로그
+	private JDialog sellDialog; // 판매 다이얼로그
+
+	private boolean adminLogin = false;
 
 	public JTableExample() {
 		super("DB 서점 프로그램");
@@ -78,6 +91,7 @@ class JTableExample extends JFrame implements ActionListener {
 		lblNewLabel.setBounds(305, 10, 200, 24);
 		add(lblNewLabel);
 
+		setTable(bookModel, "책");
 		table.setModel(bookModel);
 		jsp.setBorder(new LineBorder(new Color(128, 128, 128), 2, true));
 		jsp.setBounds(12, 88, 760, 320);
@@ -89,17 +103,23 @@ class JTableExample extends JFrame implements ActionListener {
 		add(adminCodeTf);
 		adminCodeTf.setColumns(10);
 
-		JLabel adminCodeLabel = new JLabel("관리자코드");
+		adminCodeLabel = new JLabel("관리자코드");
 		adminCodeLabel.setFont(new Font("맑은 고딕", Font.PLAIN, 16));
 		adminCodeLabel.setBounds(264, 60, 85, 24);
 		add(adminCodeLabel);
+
+		loginCheckLabel = new JLabel();
+		loginCheckLabel.setFont(new Font("맑은 고딕", Font.PLAIN, 16));
+		loginCheckLabel.setBounds(464, 60, 300, 24);
+		loginCheckLabel.setVisible(false);
+		add(loginCheckLabel);
 
 		adminPwTf = new JTextField();
 		adminPwTf.setColumns(10);
 		adminPwTf.setBounds(548, 60, 120, 24);
 		add(adminPwTf);
 
-		JLabel adminPwLabel = new JLabel("비밀번호");
+		adminPwLabel = new JLabel("비밀번호");
 		adminPwLabel.setFont(new Font("맑은 고딕", Font.PLAIN, 16));
 		adminPwLabel.setBounds(481, 60, 65, 24);
 		add(adminPwLabel);
@@ -168,6 +188,7 @@ class JTableExample extends JFrame implements ActionListener {
 		tableLabel.setFont(new Font("맑은 고딕", Font.PLAIN, 18));
 		tableLabel.setBounds(12, 32, 120, 30);
 		add(tableLabel);
+
 		this.setVisible(true);
 	}
 
@@ -180,61 +201,402 @@ class JTableExample extends JFrame implements ActionListener {
 			// 로그인 이벤트
 			login();
 		} else if (command.equals("search")) {
+			search();
 			// 검색 이벤트
 		} else if (command.equals("add")) {
+			if (adminLogin) {
+				add();
+			} else {
+				Alert("경고", "관리자 로그인이 필요합니다!");
+			}
 			// 추가 이벤트
 		} else if (command.equals("update")) {
+			if (adminLogin) {
+				update();
+			} else {
+				Alert("경고", "관리자 로그인이 필요합니다!");
+			}
 			// 변경 이벤트
 		} else if (command.equals("sell")) {
-			// 판매 이벤트
-		} // else if (comSelect.equals("책")) {
-//			// 책 목록 불러오기
-//			setTable(bookModel);
-//			table.setModel(bookModel);
-//		} else if (comSelect.equals("회원")) {
-//			// 회원 목록 불러오기
-//			setTable(userModel);
-//			table.setModel(userModel);
-//		} else if (comSelect.equals("우수고객")) {
-//			// 우수고객 목록 불러오기
-//			setTable(userModel);
-//			table.setModel(userModel);
-//		} else if (comSelect.equals("재고량부족 책목록")) {
-//			// 재고량 부족 책 목록 불러오기
-//			setTable(bookModel);
-//			table.setModel(bookModel);
-//		}
-	}
-
-	private void login() {
-		String query = "select 비밀번호 from 관리자 where 관리자코드 = '" + adminCodeTf.getText() + "' and 비밀번호 = '"
-				+ adminPwTf.getText() + "'";
-		DB_Conn dbc = new DB_Conn();
-		try {
-			Statement stmt = dbc.con.createStatement();
-			ResultSet rs = stmt.executeQuery(query);
-			while (rs.next()) {
-				if(adminPwTf.getText().equals(rs.getString(1))) {
-					
-				}
+			if (adminLogin) {
+				sell();
+			} else {
+				Alert("경고", "관리자 로그인이 필요합니다!");
 			}
-			stmt.close();
-			rs.close();
-			dbc.con.close();
-		} catch (SQLException e) {
-			e.printStackTrace();
+			// 판매 이벤트
+		} else if (comSelect.equals("책")) {
+			// 책 목록 불러오기
+			setTable(bookModel, comSelect);
+			table.setModel(bookModel);
+		} else if (comSelect.equals("회원")) {
+			// 회원 목록 불러오기
+			setTable(userModel, comSelect);
+			table.setModel(userModel);
+		} else if (comSelect.equals("우수고객")) {
+			// 우수고객 목록 불러오기
+			setTable(userModel, comSelect);
+			table.setModel(userModel);
+		} else if (comSelect.equals("재고량부족 책목록")) {
+			// 재고량 부족 책 목록 불러오기
+			setTable(bookModel, comSelect);
+			table.setModel(bookModel);
 		}
 	}
 
-	public void setTable(DefaultTableModel model) {
-		String query = "";
+	// 검색
+	private void search() {
+		String searchKeyword = searchTf.getText(); // 검색어
+
 		if (tableType.equals("책")) {
-			query = "select 책번호, 제목, 저자, 출판사, 가격, 재고량 from 책";
+			if (searchKeyword.equals("")) { // 검색 창이 빈칸일 때
+				setTable(bookModel, "책");
+				table.setModel(bookModel);
+			} else {
+
+			}
 		} else if (tableType.equals("회원")) {
-			query = "select 회원번호,이름,주민번호,전화번호,가입일,마일리지 from 회원";
+			if (searchKeyword.equals("")) { // 검색 창이 빈칸일 때
+				setTable(userModel, "회원");
+				table.setModel(userModel);
+			} else {
+
+			}
 		} else if (tableType.equals("우수고객")) {
+			if (searchKeyword.equals("")) { // 검색 창이 빈칸일 때
+				setTable(userModel, "우수고객");
+				table.setModel(userModel);
+			} else {
+
+			}
+		} else if (tableType.equals("재고량부족")) {
+			if (searchKeyword.equals("")) { // 검색 창이 빈칸일 때
+				setTable(bookModel, "재고량부족");
+				table.setModel(bookModel);
+			} else {
+
+			}
+		}
+	}
+
+	// 추가
+	private void add() {
+		addDialog = new JDialog(this, "추가", true);
+		JPanel addPanel = new JPanel();
+		addPanel.setLayout(null);
+
+		JLabel addDataLabel = new JLabel("데이터 추가");
+		addDataLabel.setFont(new Font("맑은 고딕", Font.BOLD, 18));
+		addDataLabel.setBounds(86, 10, 96, 30);
+		addPanel.add(addDataLabel);
+
+		JLabel sLabel1 = new JLabel("속성1");
+		sLabel1.setFont(new Font("맑은 고딕", Font.PLAIN, 16));
+		sLabel1.setBounds(12, 47, 70, 20);
+		addPanel.add(sLabel1);
+
+		JLabel sLabel2 = new JLabel("속성2");
+		sLabel2.setFont(new Font("맑은 고딕", Font.PLAIN, 16));
+		sLabel2.setBounds(12, 68, 70, 20);
+		addPanel.add(sLabel2);
+
+		JLabel sLabel3 = new JLabel("속성3");
+		sLabel3.setFont(new Font("맑은 고딕", Font.PLAIN, 16));
+		sLabel3.setBounds(12, 89, 70, 20);
+		addPanel.add(sLabel3);
+
+		JLabel sLabel4 = new JLabel("속성4");
+		sLabel4.setFont(new Font("맑은 고딕", Font.PLAIN, 16));
+		sLabel4.setBounds(12, 110, 70, 20);
+		addPanel.add(sLabel4);
+
+		JLabel sLabel5 = new JLabel("속성5");
+		sLabel5.setFont(new Font("맑은 고딕", Font.PLAIN, 16));
+		sLabel5.setBounds(12, 131, 70, 20);
+		addPanel.add(sLabel5);
+
+		JLabel sLabel6 = new JLabel("속성6");
+		sLabel6.setFont(new Font("맑은 고딕", Font.PLAIN, 16));
+		sLabel6.setBounds(12, 152, 70, 20);
+		addPanel.add(sLabel6);
+
+		JTextField sTf1 = new JTextField();
+		sTf1.setDropMode(DropMode.INSERT);
+		sTf1.setBounds(86, 49, 177, 20);
+		addPanel.add(sTf1);
+		sTf1.setColumns(10);
+
+		JTextField sTf2 = new JTextField();
+		sTf2.setDropMode(DropMode.INSERT);
+		sTf2.setColumns(10);
+		sTf2.setBounds(86, 70, 177, 20);
+		addPanel.add(sTf2);
+
+		JTextField sTf3 = new JTextField();
+		sTf3.setDropMode(DropMode.INSERT);
+		sTf3.setColumns(10);
+		sTf3.setBounds(86, 91, 177, 20);
+		addPanel.add(sTf3);
+
+		JTextField sTf4 = new JTextField();
+		sTf4.setDropMode(DropMode.INSERT);
+		sTf4.setColumns(10);
+		sTf4.setBounds(86, 112, 177, 20);
+		addPanel.add(sTf4);
+
+		JTextField sTf5 = new JTextField();
+		sTf5.setDropMode(DropMode.INSERT);
+		sTf5.setColumns(10);
+		sTf5.setBounds(86, 133, 177, 20);
+		addPanel.add(sTf5);
+
+		JTextField sTf6 = new JTextField();
+		sTf6.setDropMode(DropMode.INSERT);
+		sTf6.setColumns(10);
+		sTf6.setBounds(86, 154, 177, 20);
+		addPanel.add(sTf6);
+
+		JButton dataAddBtn = new JButton("추가");
+		dataAddBtn.setFocusable(false);
+		dataAddBtn.setBounds(55, 202, 80, 35);
+		addPanel.add(dataAddBtn);
+
+		JButton cancelBtn = new JButton("취소");
+		cancelBtn.setFocusable(false);
+		cancelBtn.setBounds(147, 202, 80, 35);
+		cancelBtn.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				addDialog.setVisible(false);
+				addDialog.dispose();
+			}
+
+		});
+		addPanel.add(cancelBtn);
+
+		addDialog.setSize(300, 300);
+		addDialog.setLayout(null);
+		addDialog.setLocationRelativeTo(this);
+		addDialog.setContentPane(addPanel);
+		addDialog.setVisible(true);
+	}
+
+	// 수정
+	private void update() {
+		updateDialog = new JDialog(this, "수정", true);
+		JPanel updatePanel = new JPanel();
+		updatePanel.setLayout(null);
+
+		JLabel updateLabel = new JLabel("데이터 수정");
+		updateLabel.setFont(new Font("맑은 고딕", Font.BOLD, 18));
+		updateLabel.setBounds(195, 8, 96, 30);
+		updatePanel.add(updateLabel);
+
+		JLabel oDataLabel = new JLabel("기존 데이터");
+		oDataLabel.setFont(new Font("맑은 고딕", Font.PLAIN, 16));
+		oDataLabel.setBounds(63, 24, 86, 20);
+		updatePanel.add(oDataLabel);
+
+		JLabel nDataLabel = new JLabel("수정 데이터");
+		nDataLabel.setFont(new Font("맑은 고딕", Font.PLAIN, 16));
+		nDataLabel.setBounds(341, 20, 86, 20);
+		updatePanel.add(nDataLabel);
+
+		JLabel dLabel1 = new JLabel("데이터1");
+		dLabel1.setFont(new Font("맑은 고딕", Font.PLAIN, 14));
+		dLabel1.setBounds(12, 48, 200, 20);
+		updatePanel.add(dLabel1);
+
+		JLabel dLabel2 = new JLabel("데이터2");
+		dLabel2.setFont(new Font("맑은 고딕", Font.PLAIN, 14));
+		dLabel2.setBounds(12, 69, 200, 20);
+		updatePanel.add(dLabel2);
+
+		JLabel dLabel3 = new JLabel("데이터3");
+		dLabel3.setFont(new Font("맑은 고딕", Font.PLAIN, 14));
+		dLabel3.setBounds(12, 90, 200, 20);
+		updatePanel.add(dLabel3);
+
+		JLabel dLabel4 = new JLabel("데이터4");
+		dLabel4.setFont(new Font("맑은 고딕", Font.PLAIN, 14));
+		dLabel4.setBounds(12, 111, 200, 20);
+		updatePanel.add(dLabel4);
+
+		JLabel dLabel5 = new JLabel("데이터5");
+		dLabel5.setFont(new Font("맑은 고딕", Font.PLAIN, 14));
+		dLabel5.setBounds(12, 132, 200, 20);
+		updatePanel.add(dLabel5);
+
+		JLabel dLabel6 = new JLabel("데이터6");
+		dLabel6.setFont(new Font("맑은 고딕", Font.PLAIN, 14));
+		dLabel6.setBounds(12, 153, 200, 20);
+		updatePanel.add(dLabel6);
+
+		JLabel sLabel1 = new JLabel("속성1");
+		sLabel1.setFont(new Font("맑은 고딕", Font.PLAIN, 16));
+		sLabel1.setBounds(221, 48, 70, 20);
+		updatePanel.add(sLabel1);
+
+		JLabel sLabel2 = new JLabel("속성2");
+		sLabel2.setFont(new Font("맑은 고딕", Font.PLAIN, 16));
+		sLabel2.setBounds(221, 69, 70, 20);
+		updatePanel.add(sLabel2);
+
+		JLabel sLabel3 = new JLabel("속성3");
+		sLabel3.setFont(new Font("맑은 고딕", Font.PLAIN, 16));
+		sLabel3.setBounds(221, 90, 70, 20);
+		updatePanel.add(sLabel3);
+
+		JLabel sLabel4 = new JLabel("속성4");
+		sLabel4.setFont(new Font("맑은 고딕", Font.PLAIN, 16));
+		sLabel4.setBounds(221, 111, 70, 20);
+		updatePanel.add(sLabel4);
+
+		JLabel sLabel5 = new JLabel("속성5");
+		sLabel5.setFont(new Font("맑은 고딕", Font.PLAIN, 16));
+		sLabel5.setBounds(221, 132, 70, 20);
+		updatePanel.add(sLabel5);
+
+		JLabel sLabel6 = new JLabel("속성6");
+		sLabel6.setFont(new Font("맑은 고딕", Font.PLAIN, 16));
+		sLabel6.setBounds(221, 153, 70, 20);
+		updatePanel.add(sLabel6);
+
+		JTextField sTf1 = new JTextField();
+		sTf1.setDropMode(DropMode.INSERT);
+		sTf1.setBounds(295, 50, 177, 20);
+		updatePanel.add(sTf1);
+		sTf1.setColumns(10);
+
+		JTextField sTf2 = new JTextField();
+		sTf2.setDropMode(DropMode.INSERT);
+		sTf2.setColumns(10);
+		sTf2.setBounds(295, 71, 177, 20);
+		updatePanel.add(sTf2);
+
+		JTextField sTf3 = new JTextField();
+		sTf3.setDropMode(DropMode.INSERT);
+		sTf3.setColumns(10);
+		sTf3.setBounds(295, 92, 177, 20);
+		updatePanel.add(sTf3);
+
+		JTextField sTf4 = new JTextField();
+		sTf4.setDropMode(DropMode.INSERT);
+		sTf4.setColumns(10);
+		sTf4.setBounds(295, 113, 177, 20);
+		updatePanel.add(sTf4);
+
+		JTextField sTf5 = new JTextField();
+		sTf5.setDropMode(DropMode.INSERT);
+		sTf5.setColumns(10);
+		sTf5.setBounds(295, 134, 177, 20);
+		updatePanel.add(sTf5);
+
+		JTextField sTf6 = new JTextField();
+		sTf6.setDropMode(DropMode.INSERT);
+		sTf6.setColumns(10);
+		sTf6.setBounds(295, 155, 177, 20);
+		updatePanel.add(sTf6);
+
+		JButton dataAddBtn = new JButton("변경");
+		dataAddBtn.setFocusable(false);
+		dataAddBtn.setBounds(161, 202, 80, 35);
+		updatePanel.add(dataAddBtn);
+
+		JButton cancelBtn = new JButton("취소");
+		cancelBtn.setFocusable(false);
+		cancelBtn.setBounds(253, 202, 80, 35);
+		cancelBtn.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				updateDialog.setVisible(false);
+				updateDialog.dispose();
+			}
+
+		});
+		updatePanel.add(cancelBtn);
+
+		updateDialog.setSize(500, 300);
+		updateDialog.setLayout(null);
+		updateDialog.setLocationRelativeTo(this);
+		updateDialog.setContentPane(updatePanel);
+		updateDialog.setVisible(true);
+	}
+
+	// 판매
+	private void sell() {
+		sellDialog = new JDialog(this, "판매", true);
+		JPanel sellPanel = new JPanel();
+		sellPanel.setLayout(null);
+
+		JLabel sellBookLabel = new JLabel("책 판매");
+		sellBookLabel.setFont(new Font("맑은 고딕", Font.BOLD, 18));
+		sellBookLabel.setBounds(110, 10, 70, 30);
+		sellPanel.add(sellBookLabel);
+
+		JLabel sBookLabel = new JLabel("Selected Book");
+		sBookLabel.setFont(new Font("맑은 고딕", Font.PLAIN, 16));
+		sBookLabel.setBounds(12, 38, 251, 20);
+		sellPanel.add(sBookLabel);
+
+		JLabel sBookNameLabel = new JLabel("판매 책 이름");
+		sBookNameLabel.setFont(new Font("맑은 고딕", Font.PLAIN, 14));
+		sBookNameLabel.setBounds(12, 58, 251, 20);
+		sellPanel.add(sBookNameLabel);
+
+		JLabel sellCntLabel = new JLabel("구매 수량");
+		sellCntLabel.setFont(new Font("맑은 고딕", Font.PLAIN, 16));
+		sellCntLabel.setBounds(12, 88, 70, 20);
+		sellPanel.add(sellCntLabel);
+
+		JLabel sellUserLabel = new JLabel("구매회원번호");
+		sellUserLabel.setFont(new Font("맑은 고딕", Font.PLAIN, 16));
+		sellUserLabel.setBounds(12, 109, 100, 20);
+		sellPanel.add(sellUserLabel);
+
+		JTextField sellCntTf = new JTextField();
+		sellCntTf.setDropMode(DropMode.INSERT);
+		sellCntTf.setColumns(10);
+		sellCntTf.setBounds(113, 90, 150, 20);
+		sellPanel.add(sellCntTf);
+
+		JTextField sellUserTf = new JTextField();
+		sellUserTf.setDropMode(DropMode.INSERT);
+		sellUserTf.setColumns(10);
+		sellUserTf.setBounds(113, 111, 150, 20);
+		sellPanel.add(sellUserTf);
+
+		JButton sellBtn = new JButton("판매");
+		sellBtn.setFocusable(false);
+		sellBtn.setBounds(56, 141, 80, 35);
+		sellPanel.add(sellBtn);
+
+		JButton cancelBtn = new JButton("취소");
+		cancelBtn.setFocusable(false);
+		cancelBtn.setBounds(148, 141, 80, 35);
+		cancelBtn.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				sellDialog.setVisible(false);
+				sellDialog.dispose();
+			}
+
+		});
+		sellPanel.add(cancelBtn);
+
+		sellDialog.setSize(300, 225);
+		sellDialog.setLayout(null);
+		sellDialog.setLocationRelativeTo(this);
+		sellDialog.setContentPane(sellPanel);
+		sellDialog.setVisible(true);
+	}
+
+	// 테이블 세팅
+	public void setTable(DefaultTableModel model, String type) {
+		String query = "";
+		if (type.equals("책")) {
+			query = "select 책번호, 제목, 저자, 출판사, 가격, 재고량 from 책";
+		} else if (type.equals("회원")) {
+			query = "select 회원번호,이름,주민번호,전화번호,가입일,마일리지 from 회원";
+		} else if (type.equals("우수고객")) {
 			// 우수고객 관련 저장프로시저 사용해야함
-		} else if (tableType.equals("재고량부족 책목록")) {
+		} else if (type.equals("재고량부족 책목록")) {
 			// 재고량 부족 책목록 관련 저장프로시저 사용해야함
 		}
 
@@ -262,9 +624,82 @@ class JTableExample extends JFrame implements ActionListener {
 			e.printStackTrace();
 		}
 	}
+
+	// 로그인
+	private void login() {
+		String query = "select 관리자코드,비밀번호 from 관리자";
+		boolean ida = false;
+		boolean pwa = false;
+		DB_Conn dbc = new DB_Conn();
+		try {
+			Statement stmt = dbc.con.createStatement();
+			ResultSet rs = stmt.executeQuery(query);
+			while (rs.next()) {
+				if (adminCodeTf.getText().equals(rs.getString(1))) {
+					ida = true;
+				}
+				if (adminPwTf.getText().equals(rs.getString(2))) {
+					pwa = true;
+				}
+				if (ida && pwa) {
+					adminLogin = true;
+					Alert("로그인 성공", adminCodeTf.getText() + "(으)로 로그인이 되었습니다.");
+					loginCheckLabel.setText("관리자 " + adminCodeTf.getText() + "님으로 접속되었습니다.");
+					loginCheckLabel.setVisible(true);
+					adminCodeLabel.setVisible(false);
+					adminPwLabel.setVisible(false);
+					adminPwTf.setVisible(false);
+					adminCodeTf.setVisible(false);
+					loginBtn.setVisible(false);
+					break;
+				}
+			}
+			if (!ida && !pwa) {
+				Alert("로그인 실패", "계정 정보가 없습니다.");
+			} else {
+				if (!ida) {
+					Alert("로그인 실패", "아이디가 틀렸습니다!");
+				} else if (!pwa) {
+					Alert("로그인 실패", "비밀번호가 틀렸습니다!");
+				}
+			}
+			stmt.close();
+			rs.close();
+			dbc.con.close();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+	}
+
+	// 다이얼로그 알림창
+	private void Alert(String alert_title, String alert_message) {
+		// alert 메소드
+		alertDialog = new JDialog(this, alert_title, true);
+		JLabel lll = new JLabel(alert_message + "    ");
+		JButton yes = new JButton("확인");
+		yes.setFocusable(false);
+		yes.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				alertDialog.setVisible(false);
+				alertDialog.dispose();
+			}
+
+		});
+		lll.setVerticalTextPosition(SwingConstants.CENTER);
+		lll.setHorizontalTextPosition(SwingConstants.CENTER);
+		JPanel ttt = new JPanel();
+		ttt.add(lll);
+		ttt.add(yes);
+		alertDialog.setLayout(null);
+		alertDialog.setLocationRelativeTo(this);
+		alertDialog.setSize(320, 90);
+		alertDialog.setContentPane(ttt);
+		alertDialog.setVisible(true);
+	}
 }
 
 public class DBBookStore {
+	// Main
 	public static void main(String[] args) {
 		JTableExample jt = new JTableExample();
 	}
