@@ -50,7 +50,8 @@ class JTableExample extends JFrame implements ActionListener {
 	// Table 생성
 	private DefaultTableModel bookModel = new DefaultTableModel(bookAttribute, 0);
 	private DefaultTableModel userModel = new DefaultTableModel(userAttribute, 0);
-	private DefaultTableModel searchModel = new DefaultTableModel(bookAttribute, 0);
+	private DefaultTableModel searchBookModel = new DefaultTableModel(bookAttribute, 0);
+	private DefaultTableModel searchUserModel = new DefaultTableModel(userAttribute, 0);
 	// Table에 들어갈 데이터 목록들 (헤더정보, 추가 될 row 개수)
 	private JTable table = new JTable();
 	private JScrollPane jsp = new JScrollPane(table);
@@ -96,6 +97,7 @@ class JTableExample extends JFrame implements ActionListener {
 
 		setTable(bookModel, "책");
 		table.setModel(bookModel);
+		table.changeSelection(0, 0, false, false);
 		jsp.setBorder(new LineBorder(new Color(128, 128, 128), 2, true));
 		jsp.setBounds(12, 88, 760, 320);
 		jsp.setBackground(Color.white);
@@ -103,6 +105,8 @@ class JTableExample extends JFrame implements ActionListener {
 
 		adminCodeTf = new JTextField();
 		adminCodeTf.setBounds(349, 60, 120, 24);
+		adminCodeTf.setActionCommand("enterLogin");
+		adminCodeTf.addActionListener(this);
 		add(adminCodeTf);
 		adminCodeTf.setColumns(10);
 
@@ -119,6 +123,8 @@ class JTableExample extends JFrame implements ActionListener {
 
 		adminPwTf = new JTextField();
 		adminPwTf.setColumns(10);
+		adminPwTf.setActionCommand("enterLogin");
+		adminPwTf.addActionListener(this);
 		adminPwTf.setBounds(548, 60, 120, 24);
 		add(adminPwTf);
 
@@ -186,6 +192,8 @@ class JTableExample extends JFrame implements ActionListener {
 		searchTf = new JTextField();
 		searchTf.setDropMode(DropMode.INSERT);
 		searchTf.setBounds(176, 421, 145, 30);
+		searchTf.setActionCommand("enterSearch");
+		searchTf.addActionListener(this);
 		add(searchTf);
 		searchTf.setColumns(10);
 
@@ -202,95 +210,98 @@ class JTableExample extends JFrame implements ActionListener {
 		String command = e.getActionCommand();
 		String comSelect = (String) tableComboBox.getSelectedItem();
 		tableType = comSelect;
-		if (command.equals("login")) {
-			// 로그인 이벤트
+		if (command.equals("login") || command.equals("enterLogin")) { // 로그인 이벤트
 			login();
-		} else if (command.equals("search")) {
-			search();
-			// 검색 이벤트
-		} else if (command.equals("add")) {
+		} else if (command.equals("search") || command.equals("enterSearch")) { // 검색 이벤트
+			if (tableType.equals("책") || tableType.equals("재고량부족 책목록")) {
+				search(searchBookModel);
+			} else if (tableType.equals("회원") || tableType.equals("우수고객")) {
+				search(searchUserModel);
+			}
+			table.changeSelection(0, 0, false, false);
+		} else if (command.equals("add")) { // 추가 이벤트
 			if (adminLogin) {
 				add();
 			} else {
 				Alert("경고", "관리자 로그인이 필요합니다!");
 			}
-			// 추가 이벤트
-		} else if (command.equals("update")) {
+		} else if (command.equals("update")) { // 변경 이벤트
 			if (adminLogin) {
 				update();
 			} else {
 				Alert("경고", "관리자 로그인이 필요합니다!");
 			}
-			// 변경 이벤트
-		} else if (command.equals("sell")) {
+
+		} else if (command.equals("sell")) { // 판매 이벤트
 			if (adminLogin) {
-				sell();
+				String selectedBook = "";
+				selectedBook = (String) table.getValueAt(table.getSelectedRow(), 1);
+				if (!selectedBook.equals("") && tableType.equals("책")) {
+					System.out.println(selectedBook);
+					sell(selectedBook);
+				} else {
+					Alert("경고", "판매할 책을 선택해주세요");
+				}
 			} else {
 				Alert("경고", "관리자 로그인이 필요합니다!");
 			}
-			// 판매 이벤트
-		} else if (comSelect.equals("책")) {
-			// 책 목록 불러오기
+		} else if (comSelect.equals("책")) { // 책 목록 불러오기
 			searchComboBox.setModel(new DefaultComboBoxModel(bookAttribute));
 			setTable(bookModel, comSelect);
 			table.setModel(bookModel);
-		} else if (comSelect.equals("회원")) {
-			// 회원 목록 불러오기
+			table.changeSelection(0, 0, false, false);
+		} else if (comSelect.equals("회원")) { // 회원 목록 불러오기
 			searchComboBox.setModel(new DefaultComboBoxModel(userAttribute));
 			setTable(userModel, comSelect);
 			table.setModel(userModel);
-		} else if (comSelect.equals("우수고객")) {
-			// 우수고객 목록 불러오기
+			table.changeSelection(0, 0, false, false);
+		} else if (comSelect.equals("우수고객")) { // 우수고객 목록 불러오기
 			setTable(userModel, comSelect);
 			table.setModel(userModel);
-		} else if (comSelect.equals("재고량부족 책목록")) {
-			// 재고량 부족 책 목록 불러오기
+			table.changeSelection(0, 0, false, false);
+		} else if (comSelect.equals("재고량부족 책목록")) { // 재고량 부족 책 목록 불러오기
 			setTable(bookModel, comSelect);
 			table.setModel(bookModel);
+			table.changeSelection(0, 0, false, false);
 		}
 	}
 
 	// 검색
-	private void search() {
+	private void search(DefaultTableModel searchModel) {
+		searchModel.setNumRows(0); // 검색된 테이블모델 초기화
 		String searchKeyword = searchTf.getText(); // 검색어
 		int searchColumn = searchComboBox.getSelectedIndex();
 		Object[] searchData = new Object[6];
 		System.out.println(searchColumn);
-		if (tableType.equals("책")) {
+		if (tableType.equals("책") || tableType.equals("재고량부족 책목록")) { // bookModel 검색
+			table.setModel(bookModel);
 			if (searchKeyword.equals("")) { // 검색 창이 빈칸일 때
 				setTable(bookModel, "책");
-				table.setModel(bookModel);
 			} else {
 				for (int i = 0; i < table.getRowCount(); i++) {
-					if (table.getValueAt(i, searchColumn).toString().contains(searchKeyword)) {
+					if (bookModel.getValueAt(i, searchColumn).toString().contains(searchKeyword)) {
 						for (int j = 0; j < 6; j++) {
-							searchData[j] = table.getValueAt(i, j).toString();
+							searchData[j] = bookModel.getValueAt(i, j).toString();
 						}
 						searchModel.addRow(searchData);
 					}
 				}
 				table.setModel(searchModel);
 			}
-		} else if (tableType.equals("회원")) {
+		} else if (tableType.equals("회원") || tableType.equals("우수고객")) { // userModel 검색
+			setTable(userModel, "회원");
 			if (searchKeyword.equals("")) { // 검색 창이 빈칸일 때
-				setTable(userModel, "회원");
 				table.setModel(userModel);
 			} else {
-
-			}
-		} else if (tableType.equals("우수고객")) {
-			if (searchKeyword.equals("")) { // 검색 창이 빈칸일 때
-				setTable(userModel, "우수고객");
-				table.setModel(userModel);
-			} else {
-
-			}
-		} else if (tableType.equals("재고량부족")) {
-			if (searchKeyword.equals("")) { // 검색 창이 빈칸일 때
-				setTable(bookModel, "재고량부족");
-				table.setModel(bookModel);
-			} else {
-
+				for (int i = 0; i < userModel.getRowCount(); i++) {
+					if (userModel.getValueAt(i, searchColumn).toString().contains(searchKeyword)) {
+						for (int j = 0; j < 6; j++) {
+							searchData[j] = userModel.getValueAt(i, j).toString();
+						}
+						searchModel.addRow(searchData);
+					}
+				}
+				table.setModel(searchModel);
 			}
 		}
 	}
@@ -375,6 +386,12 @@ class JTableExample extends JFrame implements ActionListener {
 		JButton dataAddBtn = new JButton("추가");
 		dataAddBtn.setFocusable(false);
 		dataAddBtn.setBounds(55, 202, 80, 35);
+		dataAddBtn.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				// preparedStatement 이벤트
+			}
+
+		});
 		addPanel.add(dataAddBtn);
 
 		JButton cancelBtn = new JButton("취소");
@@ -538,7 +555,7 @@ class JTableExample extends JFrame implements ActionListener {
 	}
 
 	// 판매
-	private void sell() {
+	private void sell(String bookName) {
 		sellDialog = new JDialog(this, "판매", true);
 		JPanel sellPanel = new JPanel();
 		sellPanel.setLayout(null);
@@ -548,13 +565,13 @@ class JTableExample extends JFrame implements ActionListener {
 		sellBookLabel.setBounds(110, 10, 70, 30);
 		sellPanel.add(sellBookLabel);
 
-		JLabel sBookLabel = new JLabel("Selected Book");
+		JLabel sBookLabel = new JLabel("판매 책 이름");
 		sBookLabel.setFont(new Font("맑은 고딕", Font.PLAIN, 16));
 		sBookLabel.setBounds(12, 38, 251, 20);
 		sellPanel.add(sBookLabel);
 
-		JLabel sBookNameLabel = new JLabel("판매 책 이름");
-		sBookNameLabel.setFont(new Font("맑은 고딕", Font.PLAIN, 14));
+		JLabel sBookNameLabel = new JLabel(bookName);
+		sBookNameLabel.setFont(new Font("맑은 고딕", Font.BOLD, 14));
 		sBookNameLabel.setBounds(12, 58, 251, 20);
 		sellPanel.add(sBookNameLabel);
 
@@ -580,14 +597,26 @@ class JTableExample extends JFrame implements ActionListener {
 		sellUserTf.setBounds(113, 111, 150, 20);
 		sellPanel.add(sellUserTf);
 
+		JLabel payLabel = new JLabel("결제방법");
+		payLabel.setFont(new Font("맑은 고딕", Font.PLAIN, 14));
+		payLabel.setBounds(142, 131, 60, 20);
+		sellPanel.add(payLabel);
+		
+		JComboBox comboBox = new JComboBox(new String[] { "현금", "카드" });
+		comboBox.setBackground(Color.white);
+		comboBox.setBounds(203, 131, 60, 20);
+		comboBox.setFont(new Font("맑은 고딕", Font.PLAIN, 12));
+		comboBox.setFocusable(false);
+		sellPanel.add(comboBox);
+
 		JButton sellBtn = new JButton("판매");
 		sellBtn.setFocusable(false);
-		sellBtn.setBounds(56, 141, 80, 35);
+		sellBtn.setBounds(56, 161, 80, 35);
 		sellPanel.add(sellBtn);
 
 		JButton cancelBtn = new JButton("취소");
 		cancelBtn.setFocusable(false);
-		cancelBtn.setBounds(148, 141, 80, 35);
+		cancelBtn.setBounds(148, 161, 80, 35);
 		cancelBtn.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				sellDialog.setVisible(false);
@@ -597,7 +626,7 @@ class JTableExample extends JFrame implements ActionListener {
 		});
 		sellPanel.add(cancelBtn);
 
-		sellDialog.setSize(300, 225);
+		sellDialog.setSize(300, 245);
 		sellDialog.setLayout(null);
 		sellDialog.setLocationRelativeTo(this);
 		sellDialog.setContentPane(sellPanel);
